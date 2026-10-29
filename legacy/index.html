@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelAI | Web Security Assessment</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <header class="header">
+        <div class="navbar">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">S</span>
+                <span class="logo-text">
+                    <strong>SentinelAI</strong>
+                    <small>AUTONOMOUS SECURITY</small>
+                </span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How it works</a>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="login.html" class="login-link login-btn">Log in</a>
+                <!-- زرار الـ Logout تم إضافته بجانب الـ Log in ومتصل بالـ script -->
+                <button id="logoutBtn" class="login-link login-btn" style="display: none; background: none; border: none; cursor: pointer;">Log out</button>
+                <a href="signup.html" class="btn btn-primary start-free-btn">Start free ↗</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Hero Section -->
+    <main>
+        <section class="hero">
+            <div class="hero-container">
+
+                <!-- Left Content -->
+                <div class="hero-content">
+
+                    <div class="eyebrow">
+                        <span class="eyebrow-dot"></span>
+                        AI-POWERED WEB SECURITY
+                    </div>
+
+                    <h1>
+                        Find vulnerabilities.<br>
+                        <span>Fix them faster.</span>
+                    </h1>
+
+                    <p class="hero-description">
+                        Run comprehensive security assessments, prioritize
+                        what matters, and ship AI-guided fixes with confidence.
+                    </p>
+
+                    <div class="hero-buttons">
+                        <a href="#" class="btn btn-primary start-scan-btn">
+                            Start your first scan <span>→</span>
+                        </a>
+                        <a href="#" class="btn btn-outline view-dashboard-btn">
+                            <span class="play-icon">▷</span> View dashboard
+                        </a>
+                    </div>
+
+                    <div class="hero-benefits">
+                        <span>✓ No credit card</span>
+                        <span>✓ First scan in minutes</span>
+                    </div>
+
+                </div>
+
+                <!-- Right Dashboard Preview -->
+                <div class="hero-visual">
+                    <div class="dashboard-preview">
+
+                        <div class="dashboard-top">
+                            <div>
+                                <span class="dashboard-subtitle">LIVE ASSESSMENT</span>
+                                <div class="dashboard-title">Security Overview</div>
+                            </div>
+
+                            <span class="status-badge">
+                                <span class="status-dot"></span>
+                                Scanning
+                            </span>
+                        </div>
+
+                        <!-- Security Score -->
+                        <div class="score-section">
+                            <div class="score-circle">
+                                <div class="score-number">
+                                    83
+                                    <small>/100</small>
+                                </div>
+                            </div>
+
+                            <div class="score-details">
+                                <h3>Security score</h3>
+                                <p><strong>Good security posture</strong></p>
+                                <p class="dashboard-subtitle">Assessment overview</p>
+                            </div>
+                        </div>
+
+                        <!-- Statistics -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">142</div>
+                                <div class="stat-label">Endpoints mapped</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-number">84</div>
+                                <div class="stat-label">Tests completed</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-number">18</div>
+                                <div class="stat-label">Findings analyzed</div>
+                            </div>
+                        </div>
+
+                        <!-- Finding Preview -->
+                        <div class="finding-heading">
+                            <h3>Critical finding</h3>
+                            <span>/api/users</span>
+                        </div>
+
+                        <div class="finding-card">
+                            <div class="finding-icon">!</div>
+                            <div class="finding-info">
+                                <h4>SQL Injection</h4>
+                                <p>/api/users</p>
+                            </div>
+                            <span class="severity">CRITICAL</span>
+                        </div>
+
+                        <!-- AI Remediation -->
+                        <div class="ai-notice">
+                            <div class="ai-icon">✨</div>
+                            <div>
+                                <h4>AI remediation ready</h4>
+                                <p>Safe patch generated</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Trusted Companies -->
+        <section class="trusted" id="features">
+            <p>BUILT FOR MODERN SECURITY TEAMS</p>
+            <div class="trusted-logos">
+                <span>Northstar</span>
+                <span>VERTEX</span>
+                <span>Cloudline</span>
+                <span>HALO</span>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="section-container">
+                <div class="section-heading">
+                    <span class="section-label">SECURITY MADE CLEAR</span>
+                    <h2>From assessment to actionable insights.</h2>
+                    <p>
+                        Identify security risks, understand their impact,
+                        and review AI-guided remediation recommendations.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">S</span>
+                <span class="logo-text"><strong>SentinelAI</strong></span>
+            </a>
+            <p>AI-powered web security assessment.</p>
+            <p>© 2026 SentinelAI</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

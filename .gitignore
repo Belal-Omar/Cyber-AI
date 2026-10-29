@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+venv/
+.venv/
+env/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Build Outputs
+dist/
+build/
+coverage/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# IDE & OS files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Local Backups
+Sential AI/

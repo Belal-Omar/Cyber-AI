@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Management | Sential AI</title>
+
+    <link rel="stylesheet" href="/admin/css/style.css">
+
+    <link rel="stylesheet" href="/admin/css/dashboard.css">
+
+</head>
+
+<body class="sential-dashboard">
+
+    <header class="sential-topbar">
+
+        <a href="/admin/dashboard" class="brand-container">
+
+            <div class="brand-mark">S</div>
+
+            <div>
+
+                <div class="brand-name">
+
+                    Sential <span class="brand-ai">AI</span>
+
+                </div>
+
+                <div class="brand-tagline">Autonomous Security</div>
+
+            </div>
+
+        </a>
+
+        <a href="/admin/dashboard" class="dashboard-btn">
+
+            Back to Dashboard
+
+        </a>
+
+    </header>
+
+    <main class="dashboard-content-area">
+
+        <section class="dash-heading">
+
+            <div>
+
+                <p class="dash-eyebrow">ADMINISTRATION</p>
+
+                <h1 class="dash-title">Admin management</h1>
+
+                <p>View users and manage their account status.</p>
+
+            </div>
+
+        </section>
+
+        <section class="sential-card">
+
+            <div class="sential-card-head">
+
+                <div>
+
+                    <h2 class="sential-card-title">Admin Accounts</h2>
+
+                    <p>Manage administrator accounts.</p>
+
+                </div>
+
+                <button
+
+                    type="button"
+
+                    class="dashboard-btn"
+
+                    id="refreshUsersBtn">
+
+                    Refresh Admins
+
+                </button>
+
+            </div>
+
+            <div class="table-scroll">
+
+                <table class="clean-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Name</th>
+
+                            <th>Email</th>
+
+                            <th>Role</th>
+
+                            <th>Status</th>
+
+                            <th>Last Login</th>
+
+                            <th>Actions</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="usersTableBody">
+
+                        <tr>
+
+                            <td colspan="6" class="dashboard-empty">
+
+                                Loading users...
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <p
+
+                id="usersMessage"
+
+                role="status"
+
+                aria-live="polite">
+
+            </p>
+
+        </section>
+
+        <footer class="dashboard-footer">
+
+            <span>Sential AI</span>
+
+            <span>Administrator Workspace</span>
+
+        </footer>
+
+    </main>
+
+    <script src="/admin/js/Admin-management.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-ai: #6366f1;
+  --color-ai-foreground: #ffffff;
+  --color-success: #10b981;
+  --color-success-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.375rem;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #1e293b;
+    --muted: #f8fafc;
+    --muted-foreground: #64748b;
+    --accent: #eff6ff;
+    --accent-foreground: #1d4ed8;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #3b82f6;
+    --surface-1: #ffffff;
+    --surface-2: #f1f5f9;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Radar Ripple Background Animation for Hero */
+.radar-grid {
+  background-image: 
+    radial-gradient(circle at 75% 35%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 75% 35%, transparent 180px, rgba(37, 99, 235, 0.04) 181px, transparent 182px),
+    radial-gradient(circle at 75% 35%, transparent 320px, rgba(37, 99, 235, 0.04) 321px, transparent 322px),
+    radial-gradient(circle at 75% 35%, transparent 460px, rgba(37, 99, 235, 0.03) 461px, transparent 462px),
+    radial-gradient(circle at 75% 35%, transparent 600px, rgba(37, 99, 235, 0.02) 601px, transparent 602px);
+}
+
+/* Glassmorphism & Elevation */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
