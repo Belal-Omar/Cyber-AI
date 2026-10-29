@@ -20,9 +20,10 @@ import sqlite3
 import subprocess
 import pickle
 import hashlib
+import importlib
 try:
-    import jinja2
-except ImportError:
+    jinja2 = importlib.import_module("jinja2")
+except Exception:
     jinja2 = None
 import httpx
 from fastapi import FastAPI, Request, Response, UploadFile, File, Form, Query
