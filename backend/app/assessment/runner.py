@@ -2,6 +2,7 @@ import uuid
 from typing import List, Dict, Any
 from datetime import datetime
 from sqlalchemy import select, update, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.domain import (
     Assessment,
     Application,
