@@ -881,10 +881,37 @@ async def create_github_pull_request(
                     "Accept": "application/vnd.github.v3+json",
                     "User-Agent": "SentialAI-Security-App"
                 }
-                # Check repo accessibility
                 repo_res = await client.get(f"https://api.github.com/repos/{repo_clean}", headers=headers)
                 if repo_res.status_code == 200:
                     live_github_api_used = True
+                    # Get base commit SHA from main/master
+                    ref_res = await client.get(f"https://api.github.com/repos/{repo_clean}/git/ref/heads/main", headers=headers)
+                    if ref_res.status_code != 200:
+                        ref_res = await client.get(f"https://api.github.com/repos/{repo_clean}/git/ref/heads/master", headers=headers)
+                    
+                    if ref_res.status_code == 200:
+                        base_sha = ref_res.json().get("object", {}).get("sha")
+                        # Create fix branch
+                        await client.post(
+                            f"https://api.github.com/repos/{repo_clean}/git/refs",
+                            headers=headers,
+                            json={"ref": f"refs/heads/{branch_name}", "sha": base_sha}
+                        )
+                        # Open official GitHub Pull Request
+                        pr_res = await client.post(
+                            f"https://api.github.com/repos/{repo_clean}/pulls",
+                            headers=headers,
+                            json={
+                                "title": pr_title,
+                                "head": branch_name,
+                                "base": "main",
+                                "body": pr_body
+                            }
+                        )
+                        if pr_res.status_code in [200, 201]:
+                            pr_data = pr_res.json()
+                            pr_number = pr_data.get("number", pr_number)
+                            pr_url = pr_data.get("html_url", pr_url)
         except Exception:
             pass
 
