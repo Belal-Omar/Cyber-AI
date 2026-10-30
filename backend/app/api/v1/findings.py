@@ -262,21 +262,34 @@ async def verify_finding(finding_id: str, data: VerificationRequest, db: AsyncSe
                 title_lower = finding.title.lower()
                 param_lower = (finding.parameter or "").lower()
 
-                # Check security headers on live host
-                if "x-content-type-options" in title_lower or "x-content-type-options" in param_lower:
+                # 1. Content-Security-Policy (CSP)
+                if "content-security-policy" in title_lower or "csp" in title_lower:
+                    if "content-security-policy" in resp_headers:
+                        live_verified = True
+                        verification_message = f"Live verification SUCCESS! Target server ({target_url}) actively enforces Content-Security-Policy header."
+                    else:
+                        live_verified = False
+                        verification_message = f"Live check FAILED: Remote server ({target_url}) is still missing Content-Security-Policy (CSP) header. Status remains OPEN."
+
+                # 2. X-Content-Type-Options
+                elif "x-content-type-options" in title_lower or "x-content-type-options" in param_lower:
                     if resp_headers.get("x-content-type-options") == "nosniff":
                         live_verified = True
                         verification_message = f"Live verification SUCCESS! Target server ({target_url}) actively returns 'X-Content-Type-Options: nosniff'."
                     else:
-                        verification_message = f"Live check FAILED: Remote host ({target_url}) is still missing 'X-Content-Type-Options: nosniff'. Upload the generated .htaccess to Hostinger public_html and retry."
+                        live_verified = False
+                        verification_message = f"Live check FAILED: Remote host ({target_url}) is still missing 'X-Content-Type-Options: nosniff'. Upload the generated .htaccess to Hostinger public_html and retry. Status remains OPEN."
 
+                # 3. Strict-Transport-Security (HSTS)
                 elif "strict-transport-security" in title_lower or "hsts" in title_lower:
                     if "strict-transport-security" in resp_headers:
                         live_verified = True
                         verification_message = f"Live verification SUCCESS! HSTS is active on {target_url}."
                     else:
-                        verification_message = f"Live check FAILED: Remote server ({target_url}) still lacks Strict-Transport-Security header."
+                        live_verified = False
+                        verification_message = f"Live check FAILED: Remote server ({target_url}) still lacks Strict-Transport-Security header. Status remains OPEN."
 
+                # 4. Anti-Clickjacking / X-Frame-Options
                 elif "x-frame-options" in title_lower or "clickjacking" in title_lower:
                     xfo = resp_headers.get("x-frame-options", "").upper()
                     csp = resp_headers.get("content-security-policy", "").lower()
@@ -288,21 +301,160 @@ async def verify_finding(finding_id: str, data: VerificationRequest, db: AsyncSe
                         protection_details = f"X-Frame-Options: {resp_headers.get('x-frame-options')}" if has_xfo else "CSP frame-ancestors"
                         verification_message = f"Live verification SUCCESS! Target server ({target_url}) actively enforces anti-clickjacking protection ({protection_details})."
                     else:
-                        verification_message = f"Live check FAILED: Remote server ({target_url}) still lacks X-Frame-Options or restrictive frame-ancestors header."
+                        live_verified = False
+                        verification_message = f"Live check FAILED: Remote server ({target_url}) still lacks X-Frame-Options or restrictive frame-ancestors header. Status remains OPEN."
 
+                # 5. Server Banner / X-Powered-By
                 elif "server banner" in title_lower or "x-powered-by" in title_lower:
                     if "x-powered-by" not in resp_headers:
                         live_verified = True
                         verification_message = f"Live verification SUCCESS! Server banner disclosure has been eliminated."
                     else:
-                        verification_message = f"Live check FAILED: Remote server ({target_url}) still exposes '{resp_headers.get('x-powered-by')}'."
+                        live_verified = False
+                        verification_message = f"Live check FAILED: Remote server ({target_url}) still exposes '{resp_headers.get('x-powered-by')}'. Status remains OPEN."
+
+                # 6. Environment Variables / Sensitive File Exposure (.env, config, openapi, etc.)
+                elif any(k in title_lower for k in ["environment variables", ".env", "sensitive file", "robots.txt", "swagger", "openapi"]):
+                    file_path = "/.env" if (".env" in title_lower or ".env" in param_lower) else (finding.parameter or "/.env")
+                    if not file_path.startswith("/"):
+                        file_path = f"/{file_path}"
+                    file_url = f"{target_url.rstrip('/')}{file_path}"
+                    try:
+                        res_file = await client.get(file_url)
+                        if res_file.status_code == 200 and len(res_file.text.strip()) > 0:
+                            if any(k in res_file.text for k in ["DB_", "SECRET", "PASSWORD", "KEY=", "PORT=", "APP_", "AWS_"]):
+                                live_verified = False
+                                verification_message = f"Live check FAILED: Sensitive file '{file_path}' is STILL publicly exposed with credentials on {target_url} (HTTP 200). Status remains OPEN."
+                            elif "robots.txt" in file_path:
+                                live_verified = True
+                                verification_message = f"Verified: '{file_path}' inspected on {target_url}."
+                            else:
+                                live_verified = False
+                                verification_message = f"Live check FAILED: Endpoint '{file_path}' returned HTTP 200 OK without access restriction. Status remains OPEN."
+                        elif res_file.status_code in [403, 404, 401]:
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! Access to '{file_path}' is actively blocked with HTTP {res_file.status_code} on {target_url}."
+                        else:
+                            live_verified = False
+                            verification_message = f"Live check: Target returned HTTP {res_file.status_code} for '{file_path}'. Access restriction not confirmed. Status remains OPEN."
+                    except Exception as ex:
+                        live_verified = False
+                        verification_message = f"Could not reach {file_url} ({ex}). Status remains OPEN."
+
+                # 7. CORS Misconfiguration
+                elif "cors" in title_lower or "origin" in title_lower:
+                    try:
+                        res_cors = await client.get(target_url, headers={"Origin": "https://cyberai-exploit-verifier.com"})
+                        cors_hdr = res_cors.headers.get("access-control-allow-origin", "")
+                        has_creds = res_cors.headers.get("access-control-allow-credentials", "").lower() == "true"
+                        if cors_hdr == "https://cyberai-exploit-verifier.com" or (cors_hdr == "*" and has_creds):
+                            live_verified = False
+                            verification_message = f"Live check FAILED: Target ({target_url}) still reflects arbitrary origin with credentials allowed. Status remains OPEN."
+                        else:
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! CORS headers properly restrict unauthorized origins."
+                    except Exception:
+                        live_verified = False
+                        verification_message = f"CORS probe failed. Status remains OPEN."
+
+                # 8. Missing Rate Limiting / Brute-Force
+                elif "rate limit" in title_lower or "brute-force" in title_lower:
+                    ep_url = f"{target_url.rstrip('/')}/login.php" if "/login.php" in title_lower else target_url
+                    got_429 = False
+                    try:
+                        for _ in range(6):
+                            r = await client.post(ep_url, data={"username": "probe_user", "password": "wrong_password"})
+                            if r.status_code == 429:
+                                got_429 = True
+                                break
+                        if got_429:
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! Target actively returns HTTP 429 Too Many Requests on rapid probing."
+                        else:
+                            live_verified = False
+                            verification_message = f"Live check FAILED: Target does not enforce rate limiting on {ep_url}. Status remains OPEN."
+                    except Exception:
+                        live_verified = False
+                        verification_message = f"Rate limit probe could not complete. Status remains OPEN."
+
+                # 9. Missing Authentication on Admin Route (/miske.php)
+                elif "authentication" in title_lower or "miske.php" in title_lower:
+                    admin_url = f"{target_url.rstrip('/')}/miske.php" if "miske.php" in title_lower else target_url
+                    try:
+                        r_auth = await client.get(admin_url)
+                        if r_auth.status_code == 200 and "login" not in r_auth.text.lower() and "unauthorized" not in r_auth.text.lower():
+                            live_verified = False
+                            verification_message = f"Live check FAILED: Endpoint '{admin_url}' is still accessible without authentication (HTTP 200). Status remains OPEN."
+                        elif r_auth.status_code in [401, 403] or "login" in str(r_auth.url).lower():
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! Administrative endpoint is secured with HTTP {r_auth.status_code}."
+                        else:
+                            live_verified = False
+                            verification_message = f"Could not confirm authentication enforcement on {admin_url}. Status remains OPEN."
+                    except Exception:
+                        live_verified = False
+                        verification_message = f"Authentication check failed. Status remains OPEN."
+
+                # 10. Reflected XSS / SSTI / Command Injection / SQLi
+                elif any(k in title_lower for k in ["cross-site scripting", "xss", "injection", "ssti", "sqli"]):
+                    canary = "cyberai_verify_probe"
+                    probe_param = finding.parameter if (finding.parameter and finding.parameter != "N/A") else "q"
+                    probe_ep = finding.endpoint if (finding.endpoint and finding.endpoint.startswith("/")) else "/"
+                    probe_url = f"{target_url.rstrip('/')}{probe_ep}"
+                    try:
+                        r_inj = await client.get(probe_url, params={probe_param: f"<{canary}>"})
+                        if f"<{canary}>" in r_inj.text:
+                            live_verified = False
+                            verification_message = f"Live check FAILED: Injected payload reflected unescaped in parameter '{probe_param}' on {target_url}. Status remains OPEN."
+                        else:
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! Input vector '{probe_param}' is properly sanitized or filtered."
+                    except Exception:
+                        live_verified = False
+                        verification_message = f"Injection probe could not reach {probe_url}. Status remains OPEN."
+
+                # 11. Hardcoded Secrets (SAST)
+                elif "hardcoded secret" in title_lower or "secret" in title_lower:
+                    live_verified = False
+                    verification_message = f"Code-level vulnerability: Hardcoded secrets must be rotated and removed from the codebase. Status remains OPEN until manually resolved."
+
+                # 12. Email Anti-Spoofing (SPF / DMARC)
+                elif "spf" in title_lower or "dmarc" in title_lower or "email" in title_lower:
+                    try:
+                        import dns.resolver
+                        domain = target_url.replace("https://", "").replace("http://", "").split("/")[0].split(":")[0]
+                        spf_ok = False
+                        dmarc_ok = False
+                        try:
+                            for rdata in dns.resolver.resolve(domain, "TXT"):
+                                if "v=spf1" in rdata.to_text():
+                                    spf_ok = True
+                        except Exception:
+                            pass
+                        try:
+                            for rdata in dns.resolver.resolve(f"_dmarc.{domain}", "TXT"):
+                                if "v=DMARC1" in rdata.to_text():
+                                    dmarc_ok = True
+                        except Exception:
+                            pass
+
+                        if spf_ok and dmarc_ok:
+                            live_verified = True
+                            verification_message = f"Live verification SUCCESS! SPF and DMARC policies are enforced for {domain}."
+                        else:
+                            live_verified = False
+                            verification_message = f"Live check FAILED: Domain '{domain}' lacks required SPF/DMARC DNS protection. Status remains OPEN."
+                    except Exception:
+                        live_verified = False
+                        verification_message = f"DNS resolution failed. Status remains OPEN."
+
                 else:
-                    # General check: allow state transition
-                    live_verified = True
-                    verification_message = f"Verification confirmed for {finding.title} on {target_url}."
+                    # STRICT DEFAULT: Do NOT auto-resolve unknown findings!
+                    live_verified = False
+                    verification_message = f"Live server test completed on {target_url}. Remediation could not be confirmed automatically. Finding remains OPEN until manual confirmation."
         except Exception as e:
-            verification_message = f"Could not reach remote target ({e}). Updated status locally."
-            live_verified = (old_status == "OPEN")
+            verification_message = f"Could not reach remote target ({e}). Status remains OPEN."
+            live_verified = False
 
     if live_verified:
         finding.status = "FIXED"
