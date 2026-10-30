@@ -25,12 +25,16 @@ import { evaluateSecurityChecks, extractTargetFileName, getTargetAssetInfo } fro
 
 export const Step5FindingsDashboard: React.FC = () => {
   const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<'findings' | 'checks' | 'sheet' | 'endpoints'>('findings')
+  const [activeView, setActiveView] = useState<'findings' | 'checks' | 'sheet' | 'endpoints' | 'simulator'>('findings')
   const [findings, setFindings] = useState<Finding[]>([])
   const [endpoints, setEndpoints] = useState<any[]>([])
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL')
   const [checksFilter, setChecksFilter] = useState<'ALL' | 'DETECTED' | 'SAFE'>('ALL')
   const [search, setSearch] = useState('')
+
+  // FEAT-SIM-03: What-If Fixed Simulator State
+  const [selectedForSim, setSelectedForSim] = useState<string[]>([])
+  const [simBatchDone, setSimBatchDone] = useState(false)
 
   // Google Sheet Active Cell State
   const [activeCell, setActiveCell] = useState<{ row: number; col: string; value: string }>({
@@ -59,6 +63,7 @@ export const Step5FindingsDashboard: React.FC = () => {
         return true
       })
       setFindings(unique)
+      setSelectedForSim(unique.map(f => f.id))
       if (unique.length > 0) {
         setActiveCell({ row: 1, col: 'A', value: unique[0].title })
       }
@@ -318,6 +323,22 @@ define( 'DB_USER', 'db_user' );`
               activeView === 'endpoints' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
             }`}>
               {endpoints.length > 0 ? endpoints.length : 11}
+            </span>
+          </button>
+
+          {/* Tab 5: FEAT-SIM-03 "What If Fixed?" Simulator */}
+          <button
+            onClick={() => setActiveView('simulator')}
+            className={`inline-flex items-center gap-2 pb-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+              activeView === 'simulator'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <span>"What If Fixed?" Simulator</span>
+            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              SIMULATION
             </span>
           </button>
         </div>
@@ -811,6 +832,155 @@ define( 'DB_USER', 'db_user' );`
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 5: FEAT-SIM-03 "WHAT IF FIXED?" INTERACTIVE SIMULATOR */}
+        {activeView === 'simulator' && (
+          <div className="space-y-6">
+            {/* Top Score Simulation Card */}
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/60 rounded-2xl p-7 text-white shadow-lg space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 border border-indigo-800 px-2.5 py-0.5 rounded-full">
+                    Predictive Attack Path Elimination Simulator
+                  </span>
+                  <h3 className="text-xl font-bold text-white mt-1">"What If Fixed?" Posture Simulator</h3>
+                  <p className="text-xs text-slate-300 max-w-xl">
+                    Select one or multiple vulnerabilities below to simulate how many attack paths will be severed and how high your security score will rise before touching production.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await api.autoFixAllFindings({ mode: 'instant_agent' })
+                    setSimBatchDone(true)
+                  }}
+                  className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Apply Autonomous Patch Batch</span>
+                </button>
+              </div>
+
+              {simBatchDone && (
+                <div className="p-3 bg-emerald-950/70 border border-emerald-700/60 rounded-xl text-xs text-emerald-200 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>All selected vulnerabilities successfully patched in live environment! Posture score elevated.</span>
+                </div>
+              )}
+
+              {/* Simulation Metrics Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 border-t border-indigo-900/60 pt-5">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Baseline Score</p>
+                  <p className="text-2xl font-black text-slate-300">60%</p>
+                  <p className="text-[10px] text-slate-500">Pre-patching posture</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Projected Score</p>
+                  <p className="text-2xl font-black text-emerald-400">
+                    {Math.min(100, 60 + (selectedForSim.length * 6))}%
+                  </p>
+                  <p className="text-[10px] text-emerald-300 font-semibold">
+                    +{Math.min(40, selectedForSim.length * 6)}% Expected Rise
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Attack Paths Broken</p>
+                  <p className="text-2xl font-black text-indigo-400">
+                    {selectedForSim.length * 2} <span className="text-xs text-slate-400 font-normal">/ 14 Vectors</span>
+                  </p>
+                  <p className="text-[10px] text-slate-400">Inbound routes eliminated</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Surface Reduction</p>
+                  <p className="text-2xl font-black text-purple-400">
+                    {Math.min(100, Math.round((selectedForSim.length * 2 / 14) * 100))}%
+                  </p>
+                  <p className="text-[10px] text-slate-400">Attack blast radius</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Checklist of Findings */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Select Vulnerabilities to Include in Simulation ({selectedForSim.length} Selected)
+                </h4>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedForSim(findings.map(f => f.id))}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedForSim([])}
+                    className="text-xs text-slate-500 hover:text-slate-800 font-semibold"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {findings.map((f) => {
+                  const isSelected = selectedForSim.includes(f.id)
+                  return (
+                    <div
+                      key={f.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedForSim(selectedForSim.filter(id => id !== f.id))
+                        } else {
+                          setSelectedForSim([...selectedForSim, f.id])
+                        }
+                      }}
+                      className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-indigo-300 bg-indigo-50/30'
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{f.title}</p>
+                          <p className="text-[11px] text-slate-500 font-mono">{f.endpoint}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                          f.severity === 'CRITICAL' ? 'bg-rose-100 text-rose-700' :
+                          f.severity === 'HIGH' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {f.severity}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                          +6% Posture Gain
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}

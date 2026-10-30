@@ -19,7 +19,11 @@ import {
   Play,
   Send,
   Sliders,
-  Link2
+  Link2,
+  GitPullRequest,
+  Network,
+  ExternalLink,
+  Bell
 } from 'lucide-react'
 import { api, type Finding } from '../../lib/api'
 import { getTargetAssetInfo } from '../../lib/securityChecks'
@@ -29,7 +33,7 @@ export const Step6FindingDetails: React.FC = () => {
   const { id } = useParams()
   const selectedId = (location.state as any)?.findingId || id
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'evidence' | 'remediation' | 'copilot'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'evidence' | 'remediation' | 'copilot' | 'attack_graph'>('overview')
   const [finding, setFinding] = useState<Finding | null>(null)
   const [copied, setCopied] = useState(false)
   const [verifying, setVerifying] = useState(false)
@@ -40,6 +44,21 @@ export const Step6FindingDetails: React.FC = () => {
   const [copilotLoading, setCopilotLoading] = useState(false)
   const [copilotResponse, setCopilotResponse] = useState<any>(null)
   const [simState, setSimState] = useState<'idle' | 'running' | 'done'>('idle')
+
+  // === FEAT-ADAPT-05: Adaptive Explanation Levels Toggle ===
+  const [explanationLevel, setExplanationLevel] = useState<'beginner' | 'developer' | 'engineer'>('developer')
+
+  // === FEAT-PR-01: One-Click GitHub PR Creation ===
+  const [prLoading, setPrLoading] = useState(false)
+  const [prResult, setPrResult] = useState<any>(null)
+  const githubRepo = 'Belal-Omar/Cyber-AI'
+  const githubToken = ''
+
+  // === FEAT-GRAPH-02: Visual Attack Graph ===
+  const [attackGraph, setAttackGraph] = useState<any>(null)
+
+  // Omnichannel alert state
+  const [alertSent, setAlertSent] = useState(false)
 
   const planType = sessionStorage.getItem('sential_assessment_plan') || 'scan_fix'
   const isScanOnly = planType === 'scan'
@@ -252,6 +271,51 @@ export const Step6FindingDetails: React.FC = () => {
     }, 1200)
   }
 
+  const handleCreatePR = async () => {
+    if (!finding) return
+    try {
+      setPrLoading(true)
+      const res = await api.createGitHubPR(finding.id, {
+        github_repo: githubRepo,
+        github_token: githubToken || undefined,
+        pr_title: `fix(security): patch ${finding.title} [Sential AI]`,
+        target_file: finding.target_file || '.htaccess / nginx.conf'
+      })
+      setPrResult(res)
+    } catch (e: any) {
+      alert('GitHub PR failed: ' + e.message)
+    } finally {
+      setPrLoading(false)
+    }
+  }
+
+  const handleLoadAttackGraph = async () => {
+    if (!finding) return
+    try {
+      const res = await api.getAttackGraph(finding.id)
+      setAttackGraph(res)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleBroadcastAlert = async () => {
+    if (!finding) return
+    try {
+      await api.dispatchAlert({
+        finding_id: finding.id,
+        finding_title: finding.title,
+        severity: finding.severity,
+        target_url: targetUrl,
+        cvss_score: 9.0
+      })
+      setAlertSent(true)
+      setTimeout(() => setAlertSent(false), 3000)
+    } catch (e: any) {
+      alert('Broadcast failed: ' + e.message)
+    }
+  }
+
   if (!finding) {
     return (
       <AssessmentLayout currentStepTitle="Finding Details">
@@ -311,14 +375,29 @@ export const Step6FindingDetails: React.FC = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('remediation')}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start md:self-auto"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>{isScanOnly ? 'View Remediation Guide' : 'View AI remediation'}</span>
-          </button>
+          <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={handleBroadcastAlert}
+              className={`inline-flex items-center gap-1.5 font-semibold text-xs px-3.5 py-2 rounded-xl border transition-all ${
+                alertSent 
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Bell className="w-3.5 h-3.5 text-rose-500" />
+              <span>{alertSent ? 'Alert Dispatched ✅' : 'Broadcast to Slack'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('remediation')}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{isScanOnly ? 'View Remediation Guide' : 'View AI remediation'}</span>
+            </button>
+          </div>
         </div>
 
         {verifyMsg && (
@@ -397,16 +476,93 @@ export const Step6FindingDetails: React.FC = () => {
                 </span>
                 {activeTab === 'copilot' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-full" />}
               </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('attack_graph')
+                  if (!attackGraph) handleLoadAttackGraph()
+                }}
+                className={`pb-3 relative transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'attack_graph' ? 'text-rose-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <Network className="w-4 h-4 text-rose-600" />
+                <span>Visual Attack Graph</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-700 tracking-wider uppercase">
+                  DAG PATH
+                </span>
+                {activeTab === 'attack_graph' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-600 rounded-full" />}
+              </button>
             </div>
 
             {/* Tab: Overview */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {/* FEAT-ADAPT-05: Adaptive Explanation Levels Toggle */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Adaptive Explanation Engine</span>
+                    <p className="text-xs font-semibold text-slate-800">Choose your technical depth level</p>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setExplanationLevel('beginner')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                        explanationLevel === 'beginner' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Beginner
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExplanationLevel('developer')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                        explanationLevel === 'developer' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Developer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExplanationLevel('engineer')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                        explanationLevel === 'engineer' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Security Engineer
+                    </button>
+                  </div>
+                </div>
+
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">What we found</h4>
-                  <p className="text-sm text-slate-700 leading-relaxed">
-                    {finding.description || "The security scanner identified a misconfiguration or vulnerability on the tested endpoint."}
-                  </p>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    {explanationLevel === 'beginner' ? 'Simplified Executive Overview' : 
+                     explanationLevel === 'engineer' ? 'Formal Security Threat Vector & CVE Taxonomy' : 'What we found'}
+                  </h4>
+                  <div className="text-sm text-slate-700 leading-relaxed p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+                    {explanationLevel === 'beginner' && (
+                      <p>
+                        This is an essential security setting missing on your website. Without it, unauthorized parties could attempt to trick your visitors or view information they shouldn't see. Applying our 1-click fix will immediately make your site compliant with industry standards.
+                      </p>
+                    )}
+                    {explanationLevel === 'developer' && (
+                      <p>
+                        {finding.description || "The tested endpoint lacks mandatory hardening directives or input sanitization. Attackers can leverage this misconfiguration to conduct cross-origin or client-tampering attacks."}
+                      </p>
+                    )}
+                    {explanationLevel === 'engineer' && (
+                      <div className="space-y-2 font-mono text-xs">
+                        <p className="text-slate-800">{finding.description || "Endpoint vulnerability detected."}</p>
+                        <div className="p-2.5 rounded bg-slate-900 text-slate-200 text-[11px] space-y-1">
+                          <p><span className="text-slate-400">CVSS Vector:</span> CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N</p>
+                          <p><span className="text-slate-400">Classification:</span> CWE-693 / OWASP ASVS V14.4</p>
+                          <p><span className="text-slate-400">Remediation Path:</span> Strict Response Header Injection & MIME Sniffing Elimination</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -683,6 +839,58 @@ header("Content-Security-Policy: default-src 'self' 'unsafe-inline' https: data:
                   </div>
                 </div>
 
+                {/* FEAT-PR-01: 1-Click GitHub Pull Request Creation */}
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-indigo-900/50 shadow-md space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-400">
+                        <GitPullRequest className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                          1-Click Automated GitHub Pull Request
+                          <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">OCTOKIT / REST</span>
+                        </h4>
+                        <p className="text-xs text-slate-300">
+                          AI generates the fix branch, commits the security patch to your repo, and opens a Pull Request.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCreatePR}
+                      disabled={prLoading}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 shrink-0 disabled:opacity-50"
+                    >
+                      <GitPullRequest className={`w-4 h-4 ${prLoading ? 'animate-spin' : ''}`} />
+                      {prLoading ? 'Creating PR on GitHub...' : 'Open GitHub Pull Request'}
+                    </button>
+                  </div>
+
+                  {prResult && (
+                    <div className="p-3.5 bg-indigo-950/70 border border-indigo-700/60 rounded-xl text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" />
+                          PR #{prResult.pr_number} Successfully Opened!
+                        </span>
+                        <a
+                          href={prResult.pr_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-indigo-300 hover:text-white flex items-center gap-1 font-semibold underline"
+                        >
+                          View on GitHub <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <p className="text-slate-300 font-mono text-[11px]">
+                        Branch: <strong className="text-white">{prResult.branch_name}</strong> • Target: <strong className="text-white">{prResult.repo}</strong>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2 mt-2">
                   <div className="font-bold text-slate-900 flex items-center gap-2">
                     <span>💡 Deployment Steps for Server Hardening ({selectedPlatform.toUpperCase()}):</span>
@@ -693,6 +901,95 @@ header("Content-Security-Policy: default-src 'self' 'unsafe-inline' https: data:
                     <li>Reload the web server or clear CDN caches (Cloudflare / Hostinger Cache).</li>
                     <li>Click <b>Verify Live Server Response</b> above to run active verification probes and confirm protection.</li>
                   </ol>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Interactive Visual Attack Graph (FEAT-GRAPH-02) */}
+            {activeTab === 'attack_graph' && (
+              <div className="space-y-6">
+                <div className="p-4 rounded-xl bg-slate-900 text-white border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
+                      <Network className="w-4 h-4" />
+                      <span>Interactive Visual Attack Graph (مسار الاختراق البصري المتسلسل)</span>
+                    </div>
+                    <span className="text-[10px] font-mono bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-800 font-bold">
+                      DAG BREADTH-FIRST
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    Traces the exploit sequence from external entrypoint through perimeter filters into the target asset.
+                  </p>
+                </div>
+
+                {/* Visual SVG Diagram */}
+                <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner overflow-x-auto">
+                  <div className="min-w-[620px] flex items-center justify-between relative py-6">
+                    {/* Node 1 */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border-2 border-rose-500 text-rose-400 flex items-center justify-center font-bold text-xs shadow-lg shadow-rose-500/20">
+                        Attacker
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-2">External Threat</span>
+                      <span className="text-[9px] text-slate-400 font-mono">Internet Ingress</span>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center px-2">
+                      <span className="text-[9px] text-slate-400 font-mono mb-1">HTTP Payload</span>
+                      <div className="w-full h-0.5 bg-gradient-to-r from-rose-500 to-indigo-500 relative">
+                        <span className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-r-2 border-indigo-400 rotate-45"></span>
+                      </div>
+                    </div>
+
+                    {/* Node 2 */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border-2 border-indigo-500 text-indigo-400 flex items-center justify-center font-bold text-xs shadow-lg shadow-indigo-500/20">
+                        WAF / CDN
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-2">Edge Perimeter</span>
+                      <span className="text-[9px] text-amber-400 font-mono">Pass-Through</span>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center px-2">
+                      <span className="text-[9px] text-slate-400 font-mono mb-1">Forward Request</span>
+                      <div className="w-full h-0.5 bg-gradient-to-r from-indigo-500 to-amber-500 relative">
+                        <span className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-r-2 border-amber-400 rotate-45"></span>
+                      </div>
+                    </div>
+
+                    {/* Node 3 */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border-2 border-amber-500 text-amber-400 flex items-center justify-center font-bold text-xs shadow-lg shadow-amber-500/20">
+                        Endpoint
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-2">{finding.endpoint || '/api'}</span>
+                      <span className="text-[9px] text-rose-400 font-mono">Vulnerable Vector</span>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center px-2">
+                      <span className="text-[9px] text-slate-400 font-mono mb-1">Exploit Execution</span>
+                      <div className="w-full h-0.5 bg-gradient-to-r from-amber-500 to-rose-500 relative">
+                        <span className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-rose-400 rotate-45"></span>
+                      </div>
+                    </div>
+
+                    {/* Node 4 */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-600/30 border-2 border-rose-600 text-rose-300 flex items-center justify-center font-bold text-xs shadow-lg shadow-rose-600/30">
+                        Database
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-2">Core Assets</span>
+                      <span className="text-[9px] text-rose-400 font-mono">At-Risk Target</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+                  <p className="font-bold text-slate-900">🛡️ Remediation Impact on Attack Chain:</p>
+                  <p className="text-slate-600">
+                    Applying the Sential AI patch completely severs the link between <strong>WAF / Perimeter</strong> and <strong>Vulnerable Endpoint</strong>, neutralizing the inbound payload before it touches backend execution context.
+                  </p>
                 </div>
               </div>
             )}

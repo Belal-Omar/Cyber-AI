@@ -10,6 +10,10 @@ import { Step6FindingDetails } from './pages/flow/Step6FindingDetails'
 import { Step7AssessmentReport } from './pages/flow/Step7AssessmentReport'
 import { Settings } from './pages/Settings'
 import { AdminDashboard } from './pages/AdminDashboard'
+import { MonitoringPage } from './pages/MonitoringPage'
+import { IntentCompilerPage } from './pages/IntentCompilerPage'
+import { EvolutionPage } from './pages/EvolutionPage'
+import { AlertsPage } from './pages/AlertsPage'
 import './index.css'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -46,6 +50,12 @@ function App() {
         <Route path="/findings/:id" element={<ProtectedRoute><Step6FindingDetails /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Step7AssessmentReport /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+        {/* Autonomous AI Suite Innovations */}
+        <Route path="/monitoring" element={<ProtectedRoute><MonitoringPage /></ProtectedRoute>} />
+        <Route path="/intent-compiler" element={<ProtectedRoute><IntentCompilerPage /></ProtectedRoute>} />
+        <Route path="/evolution" element={<ProtectedRoute><EvolutionPage /></ProtectedRoute>} />
+        <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
 
         {/* Secret Protected Admin Portal */}
         <Route path="/admin/portal" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

@@ -338,5 +338,136 @@ export const api = {
       console.warn('API error fetching admin users:', e)
     }
     return []
+  },
+
+  // === Auto-Fix All Findings ===
+  async autoFixAllFindings(payload: { mode?: string; applicationId?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/findings/auto-fix-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error('Failed to auto-fix findings')
+    return res.json()
+  },
+
+  // === FEAT-PR-01: GitHub PR 1-Click Remediation ===
+  async createGitHubPR(findingId: string, payload: { github_repo?: string; github_token?: string; branch_name?: string; pr_title?: string; target_file?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/findings/${findingId}/github-pr`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error('Failed to create GitHub Pull Request')
+    return res.json()
+  },
+
+  // === FEAT-GRAPH-02: Visual Attack Graph ===
+  async getAttackGraph(findingId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/findings/${findingId}/attack-graph`)
+    if (!res.ok) throw new Error('Failed to load attack graph')
+    return res.json()
+  },
+
+  // === FEAT-SIM-03: What-If Fixed Simulator ===
+  async simulateWhatIf(findingIds: string[], baselineScore: number = 60): Promise<any> {
+    const res = await fetch(`${API_BASE}/findings/simulate-what-if`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selected_finding_ids: findingIds, baseline_score: baselineScore })
+    })
+    if (!res.ok) throw new Error('Failed to run What-If simulation')
+    return res.json()
+  },
+
+  // === INNOV-ALERTS-03: Omnichannel Security Alerts ===
+  async getAlertChannels(): Promise<any> {
+    const res = await fetch(`${API_BASE}/alerts/channels`)
+    if (!res.ok) throw new Error('Failed to fetch alert channels')
+    return res.json()
+  },
+
+  async updateAlertChannel(config: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/alerts/channels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    })
+    if (!res.ok) throw new Error('Failed to update alert channel')
+    return res.json()
+  },
+
+  async testAlert(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/alerts/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error('Failed to dispatch test alert')
+    return res.json()
+  },
+
+  async dispatchAlert(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/alerts/dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error('Failed to broadcast alert')
+    return res.json()
+  },
+
+  // === INNOV-MONITOR-02: Continuous Attack Surface Monitoring (24/7) ===
+  async getMonitoringStatus(applicationId?: string): Promise<any> {
+    const url = applicationId ? `${API_BASE}/monitoring/status?application_id=${applicationId}` : `${API_BASE}/monitoring/status`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('Failed to fetch monitoring status')
+    return res.json()
+  },
+
+  async toggleMonitoring(enabled: boolean, intervalHours: number = 1, targetUrl?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/monitoring/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled, interval_hours: intervalHours, target_url: targetUrl })
+    })
+    if (!res.ok) throw new Error('Failed to toggle monitoring')
+    return res.json()
+  },
+
+  async triggerMonitoringProbe(targetUrl?: string, applicationId?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/monitoring/trigger-probe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_url: targetUrl, application_id: applicationId })
+    })
+    if (!res.ok) throw new Error('Failed to trigger monitoring probe')
+    return res.json()
+  },
+
+  // === INNOV-INTENT-01: Security Intent Compiler ===
+  async getIntentTemplates(): Promise<any> {
+    const res = await fetch(`${API_BASE}/intent/templates`)
+    if (!res.ok) throw new Error('Failed to fetch intent templates')
+    return res.json()
+  },
+
+  async compileAndTestIntent(rules: string[], targetUrl?: string, applicationId?: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/intent/compile-and-test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rules, target_url: targetUrl, application_id: applicationId })
+    })
+    if (!res.ok) throw new Error('Failed to compile intent rules')
+    return res.json()
+  },
+
+  // === ROADMAP-EVOL-04: Security Evolution & Regression Memory ===
+  async getEvolutionHistory(applicationId?: string): Promise<any> {
+    const url = applicationId ? `${API_BASE}/evolution/history?application_id=${applicationId}` : `${API_BASE}/evolution/history`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('Failed to fetch evolution history')
+    return res.json()
   }
 }
+

@@ -16,6 +16,10 @@ from app.api.v1.applications import router as applications_router
 from app.api.v1.assessments import router as assessments_router
 from app.api.v1.findings import router as findings_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.alerts import router as alerts_router
+from app.api.v1.monitoring import router as monitoring_router
+from app.api.v1.intent import router as intent_router
+from app.api.v1.evolution import router as evolution_router
 
 async def seed_initial_data():
     async with AsyncSessionLocal() as db:
@@ -129,6 +133,10 @@ app.include_router(applications_router, prefix="/api/v1")
 app.include_router(assessments_router, prefix="/api/v1")
 app.include_router(findings_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
+app.include_router(alerts_router, prefix="/api/v1")
+app.include_router(monitoring_router, prefix="/api/v1")
+app.include_router(intent_router, prefix="/api/v1")
+app.include_router(evolution_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

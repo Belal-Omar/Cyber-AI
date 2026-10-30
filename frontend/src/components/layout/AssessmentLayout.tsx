@@ -11,7 +11,10 @@ import {
   Code, 
   FileText,
   ChevronDown,
-  Lock
+  Lock,
+  Radio,
+  Sparkles,
+  History
 } from 'lucide-react'
 
 interface AssessmentLayoutProps {
@@ -101,6 +104,94 @@ export const AssessmentLayout: React.FC<AssessmentLayoutProps> = ({ children, cu
                   </Link>
                 )
               })}
+            </nav>
+          </div>
+
+          {/* Autonomous AI Innovation Suite */}
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Autonomous AI Suite
+              </p>
+              <span className="text-[9px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded-full border border-purple-200">
+                INNOVATIONS
+              </span>
+            </div>
+
+            <nav className="space-y-1">
+              <Link
+                to="/monitoring"
+                className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  location.pathname === '/monitoring'
+                    ? 'bg-indigo-50 text-indigo-700 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                    location.pathname === '/monitoring' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <Radio className="w-3.5 h-3.5" />
+                  </div>
+                  <span>24/7 Monitoring</span>
+                </div>
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </Link>
+
+              <Link
+                to="/intent-compiler"
+                className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  location.pathname === '/intent-compiler'
+                    ? 'bg-purple-50 text-purple-700 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                    location.pathname === '/intent-compiler' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Intent Compiler</span>
+                </div>
+                <span className="text-[9px] font-bold bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">DSL</span>
+              </Link>
+
+              <Link
+                to="/evolution"
+                className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  location.pathname === '/evolution'
+                    ? 'bg-blue-50 text-blue-700 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                    location.pathname === '/evolution' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <History className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Regression Memory</span>
+                </div>
+              </Link>
+
+              <Link
+                to="/alerts"
+                className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  location.pathname === '/alerts'
+                    ? 'bg-rose-50 text-rose-700 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                    location.pathname === '/alerts' ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <Bell className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Omnichannel Alerts</span>
+                </div>
+              </Link>
             </nav>
           </div>
         </div>
