@@ -50,6 +50,31 @@ export const Step5FindingsDashboard: React.FC = () => {
   const targetUrl = sessionStorage.getItem('sential_target_url') || 'http://127.0.0.1:5050'
   const cleanDomain = targetUrl.replace(/^https?:\/\//, '').split('/')[0]
 
+  const SEVERITY_WEIGHT: Record<string, number> = {
+    CRITICAL: 1,
+    HIGH: 2,
+    MEDIUM: 3,
+    LOW: 4,
+    INFO: 5
+  }
+
+  const sortFindingsByPriority = (list: Finding[]): Finding[] => {
+    return [...list].sort((a, b) => {
+      // 1. Status: Active threats (OPEN) always before Resolved (FIXED / RESOLVED)
+      const statusA = a.status === 'OPEN' ? 0 : 1
+      const statusB = b.status === 'OPEN' ? 0 : 1
+      if (statusA !== statusB) return statusA - statusB
+
+      // 2. Severity: CRITICAL -> HIGH -> MEDIUM -> LOW -> INFO
+      const sevA = SEVERITY_WEIGHT[a.severity] ?? 99
+      const sevB = SEVERITY_WEIGHT[b.severity] ?? 99
+      if (sevA !== sevB) return sevA - sevB
+
+      // 3. Confidence: Higher confidence first
+      return (b.confidence || 0) - (a.confidence || 0)
+    })
+  }
+
   useEffect(() => {
     async function load() {
       const savedAppId = sessionStorage.getItem('sential_application_id') || undefined
@@ -62,10 +87,11 @@ export const Step5FindingsDashboard: React.FC = () => {
         seen.add(k)
         return true
       })
-      setFindings(unique)
-      setSelectedForSim(unique.map(f => f.id))
-      if (unique.length > 0) {
-        setActiveCell({ row: 1, col: 'A', value: unique[0].title })
+      const sorted = sortFindingsByPriority(unique)
+      setFindings(sorted)
+      setSelectedForSim(sorted.map(f => f.id))
+      if (sorted.length > 0) {
+        setActiveCell({ row: 1, col: 'A', value: sorted[0].title })
       }
       if (savedAppId) {
         const eps = await api.getEndpoints(savedAppId)
@@ -75,16 +101,16 @@ export const Step5FindingsDashboard: React.FC = () => {
     load()
   }, [])
 
-  const openFindings = findings.filter(f => f.status === 'OPEN')
-  const resolvedFindings = findings.filter(f => f.status === 'RESOLVED' || f.status === 'FIXED')
+  const openFindings = sortFindingsByPriority(findings.filter(f => f.status === 'OPEN'))
+  const resolvedFindings = sortFindingsByPriority(findings.filter(f => f.status === 'RESOLVED' || f.status === 'FIXED'))
 
   const currentDataset = activeView === 'resolved' 
     ? resolvedFindings 
     : activeView === 'findings' 
       ? openFindings 
-      : findings
+      : sortFindingsByPriority(findings)
 
-  const filtered = currentDataset.filter(f => {
+  const filtered = sortFindingsByPriority(currentDataset.filter(f => {
     const matchesFilter = activeFilter === 'ALL' || f.severity === activeFilter
     const targetFile = extractTargetFileName(f)
     const matchesSearch = f.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -92,7 +118,7 @@ export const Step5FindingsDashboard: React.FC = () => {
                           targetFile.toLowerCase().includes(search.toLowerCase()) ||
                           (f.category && f.category.toLowerCase().includes(search.toLowerCase()))
     return matchesFilter && matchesSearch
-  })
+  }))
 
   const filteredEndpoints = endpoints.filter(ep => {
     return ep.url_path.toLowerCase().includes(search.toLowerCase()) || 

@@ -254,10 +254,8 @@ async def execute_assessment(db: AsyncSession, assessment_id: uuid.UUID) -> Asse
         )
         db.add(evidence)
 
-    # Automatically resolve findings that are no longer detected on target
-    for key, f in existing_map.items():
-        if key not in detected_keys:
-            f.status = "FIXED"
+    # Security findings remain OPEN until explicitly resolved or verified via remediation.
+    # Do not auto-flip un-detected findings to FIXED on partial or scope-limited scans.
 
     # Calculate posture score based exclusively on active OPEN findings
     open_findings = [f for f in existing_map.values() if f.status == "OPEN"]

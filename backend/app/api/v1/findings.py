@@ -54,6 +54,17 @@ async def list_findings(application_id: Optional[uuid.UUID] = None, status: Opti
         if key not in seen_keys:
             seen_keys.add(key)
             findings.append(f)
+
+    # Sort findings: OPEN first, then by highest severity (CRITICAL -> HIGH -> MEDIUM -> LOW -> INFO)
+    sev_weight = {"CRITICAL": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4, "INFO": 5}
+    findings.sort(
+        key=lambda f: (
+            0 if f.status == "OPEN" else 1,
+            sev_weight.get(f.severity, 99),
+            -(f.confidence or 0)
+        )
+    )
+
     response = []
 
     for f in findings:
