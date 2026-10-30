@@ -910,7 +910,9 @@ export const Step4AssessmentProgress: React.FC = () => {
               }}
               className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer animate-pulse"
             >
-              <span>Assessment Complete · View Findings ({findings.length} Issues)</span>
+              <span>
+                Assessment Complete · View Findings ({findings.filter(f => f.status === 'OPEN').length > 0 ? `${findings.filter(f => f.status === 'OPEN').length} Active Issues` : 'All Threats Resolved ✅'})
+              </span>
               <ChevronRight className="w-4 h-4" />
             </button>
           )}

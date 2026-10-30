@@ -29,7 +29,7 @@ export interface Finding {
   category?: string
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO'
   confidence: number
-  status: 'OPEN' | 'FIXED' | 'VERIFYING'
+  status: 'OPEN' | 'FIXED' | 'VERIFYING' | 'RESOLVED'
   application: string
   application_id?: string
   endpoint: string
